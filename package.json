@@ -1,0 +1,30 @@
+{
+  "name": "obsidian-plugins-creation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "test": "jest"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
+    "obsidian": "^1.14.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.6.4",
+    "builtin-modules": "^5.4.0",
+    "esbuild": "^0.28.2",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
+    "tslib": "^2.8.1",
+    "typescript": "^7.0.2"
+  }
+}

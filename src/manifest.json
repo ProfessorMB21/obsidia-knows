@@ -1,0 +1,11 @@
+{
+  "id": "obsidiknows",
+  "name": "ObsidiaKnows",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Transform documents into hierarchical knowledge graphs",
+  "author": "Your Name",
+  "authorUrl": "https://github.com/yourusername",
+  "fundingUrl": "",
+  "isDesktopOnly": false
+}
