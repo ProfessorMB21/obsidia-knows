@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+*.swp
+*.swo
+*~
+.env
+.env.local
+main.js
+styles.css
+.obsidian/
+dist/
+build/
+.cache/
