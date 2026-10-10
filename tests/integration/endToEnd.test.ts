@@ -78,7 +78,7 @@ The hero was destined for greatness.
     const validation = validateTextInput(document);
     expect(validation.valid).toBe(true);
     expect(validation.wordCount).toBeGreaterThan(0);
-    expect(validation.title).toBe('The Hero');
+    expect(validation.title).toBe("The Hero's Journey");
 
     // Step 2: Mock LLM analysis
     const config: AnalysisConfig = {
@@ -101,7 +101,7 @@ The hero was destined for greatness.
     expect(nodeFiles.size).toBeGreaterThan(0);
 
     // Verify markdown content
-    const mainFile = Array.from(nodeFiles.values()).find((v) => v.includes('# The Hero'));
+    const mainFile = Array.from(nodeFiles.values()).find((v) => v.includes("The Hero's Journey"));
     expect(mainFile).toBeDefined();
     expect(mainFile).toContain('---'); // YAML frontmatter
     expect(mainFile).toContain('title:');

@@ -52,7 +52,10 @@ export function detectDocumentTitle(text: string): string {
     const trimmed = line.trim();
     if (trimmed.length > 0) {
       // Remove markdown headers if present
-      return trimmed.replace(/^#+\s*/, '').substring(0, 50);
+      const cleaned = trimmed.replace(/^#+\s*/, '');
+      // Get first sentence or first 50 chars
+      const firstSentence = cleaned.split(/[.!?]/)[0].trim();
+      return firstSentence.substring(0, 50) || cleaned.substring(0, 50);
     }
   }
 
