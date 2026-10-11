@@ -11,3 +11,4 @@ styles.css
 dist/
 build/
 .cache/
+knowledge-graph-plugin-spec.md
