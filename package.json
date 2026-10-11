@@ -15,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",
+    "jszip": "^3.10.2",
     "obsidian": "^1.14.4"
   },
   "devDependencies": {

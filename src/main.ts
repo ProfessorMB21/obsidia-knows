@@ -3,6 +3,7 @@ import { ObsidiaKnowsSettings, ObsidiaKnowsSettingTab } from './settings';
 import { showCreateGraphModal } from './ui/createModal';
 import { showProgressNotification, showErrorNotification, showSuccessNotification, hideProgressNotification } from './ui/progressNotification';
 import { validateTextInput } from './input/inputHandler';
+import { FileValidator } from './input/fileValidator';
 import { ClaudeProvider } from './analysis/claudeProvider';
 import { DeepSeekProvider } from './analysis/deepseekProvider';
 import { OpenRouterProvider } from './analysis/openrouterProvider';
@@ -58,7 +59,7 @@ export default class ObsidiaKnowsPlugin extends Plugin {
     });
   }
 
-  private handleCreateCommand() {
+  private async handleCreateCommand() {
     logger.log('Create Knowledge Graph command triggered');
 
     const defaultConfig = {
@@ -73,14 +74,39 @@ export default class ObsidiaKnowsPlugin extends Plugin {
       }
 
       try {
-        // Validate input
-        const validation = validateTextInput(result.document!);
-        if (!validation.valid) {
-          showErrorNotification(this.app, validation.error!);
+        // Process input (file or text)
+        let inputText: string;
+        let inputTitle: string;
+        const fileValidator = new FileValidator();
+
+        if (result.file) {
+          logger.log(`Processing file input: ${result.file.name}`);
+          showProgressNotification(this.app, `Parsing ${result.file.name}...`);
+
+          const fileValidation = await fileValidator.validateFile(result.file);
+          if (!fileValidation.valid) {
+            showErrorNotification(this.app, fileValidation.error!);
+            return;
+          }
+
+          inputText = fileValidation.text!;
+          inputTitle = result.file.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+          logger.log(`File parsed: ${fileValidation.fileSizeBytes} bytes, ${inputText.length} characters`);
+        } else if (result.document) {
+          logger.log('Processing text input');
+          const textValidation = validateTextInput(result.document);
+          if (!textValidation.valid) {
+            showErrorNotification(this.app, textValidation.error!);
+            return;
+          }
+          inputText = textValidation.text!;
+          inputTitle = textValidation.title!;
+        } else {
+          showErrorNotification(this.app, 'No document or file provided');
           return;
         }
 
-        logger.log(`Input validated: ${validation.wordCount} words`);
+        logger.log(`Input validated: ${inputText.split(/\s+/).length} words`);
 
         // Get provider based on settings
         let provider;
@@ -126,11 +152,11 @@ export default class ObsidiaKnowsPlugin extends Plugin {
         // Analyze document
         const graph = await analyzeDocument(
           this.app,
-          validation.text!,
+          inputText,
           provider,
           result.config!,
           this.settings.data,
-          validation.title!,
+          inputTitle,
           {
             currentChunk: 0,
             totalChunks: 1,
@@ -159,7 +185,7 @@ export default class ObsidiaKnowsPlugin extends Plugin {
         hideProgressNotification();
         showSuccessNotification(
           this.app,
-          `Knowledge graph created: ${validation.title!}`,
+          `Knowledge graph created: ${inputTitle}`,
           5000
         );
 
