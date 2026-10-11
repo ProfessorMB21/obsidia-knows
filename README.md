@@ -481,18 +481,6 @@ npm test -- --coverage
 - [ ] Batch processing
 - [ ] Analysis templates
 
----
-
-## Project Stats
-
-- **Lines of Code**: ~4,000 (including tests)
-- **Test Coverage**: 22 tests across 5 suites
-- **Bundle Size**: 223KB (Phase 2 with file upload)
-- **Supported Formats**: 3 (text, PDF, DOCX)
-- **LLM Providers**: 4 (Claude, OpenRouter, OmniRoute, DeepSeek)
-- **Node Types**: 4 core (6 with Phase 2 Sprint 3)
-
----
 
 ## License
 
