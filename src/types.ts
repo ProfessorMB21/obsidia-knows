@@ -72,8 +72,13 @@ export interface LLMProvider {
 }
 
 export interface KnowledgeGraphSettings {
-  apiProvider: 'claude' | 'gpt' | 'local';
+  apiProvider: 'claude' | 'deepseek' | 'openrouter' | 'omniroute' | 'gpt' | 'local';
   claudeApiKey: string;
+  deepseekApiKey: string;
+  openrouterApiKey: string;
+  openrouterModel: string;
+  omnirouteApiKey: string;
+  omnirouteModel: string;
   gptApiKey?: string;
   defaultDepth: AnalysisDepth;
   defaultNodeTypes: NodeType[];

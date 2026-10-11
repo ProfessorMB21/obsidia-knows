@@ -1,9 +1,19 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import { KnowledgeGraphSettings, NodeType } from './types';
+import { ClaudeProvider } from './analysis/claudeProvider';
+import { DeepSeekProvider } from './analysis/deepseekProvider';
+import { OpenRouterProvider } from './analysis/openrouterProvider';
+import { OmniRouteProvider } from './analysis/omnirouteProvider';
+import { logger } from './utils/logger';
 
 const DEFAULT_SETTINGS: KnowledgeGraphSettings = {
   apiProvider: 'claude',
   claudeApiKey: '',
+  deepseekApiKey: '',
+  openrouterApiKey: '',
+  openrouterModel: 'openai/gpt-4-turbo',
+  omnirouteApiKey: '',
+  omnirouteModel: 'gpt-4-turbo',
   gptApiKey: '',
   defaultDepth: 'quick',
   defaultNodeTypes: ['character', 'event', 'concept'],
@@ -51,35 +61,151 @@ export class ObsidiaKnowsSettingTab extends PluginSettingTab {
     // LLM Provider Section
     containerEl.createEl('h2', { text: 'LLM Provider' });
 
+    let apiKeyField: Setting;
+
     new Setting(containerEl)
       .setName('API Provider')
       .setDesc('Choose which LLM API to use')
       .addDropdown((dropdown) =>
         dropdown
           .addOption('claude', 'Claude (Anthropic)')
+          .addOption('deepseek', 'DeepSeek')
+          .addOption('openrouter', 'OpenRouter')
+          .addOption('omniroute', 'OmniRoute')
           .addOption('gpt', 'GPT (OpenAI) - Coming Soon')
           .addOption('local', 'Local LLM - Coming Soon')
           .setValue(this.plugin.settings.data.apiProvider)
           .onChange(async (value) => {
             this.plugin.settings.data.apiProvider = value as any;
             await this.plugin.saveSettings();
+            // Redisplay settings to update API key field
+            this.display();
           })
       );
 
-    new Setting(containerEl)
-      .setName('Claude API Key')
-      .setDesc('Enter your Anthropic API key (stored locally)')
-      .addText((text) => {
-        text
-          .setPlaceholder('sk-ant-...')
-          .setValue(this.plugin.settings.data.claudeApiKey)
-          .onChange(async (value) => {
-            this.plugin.settings.data.claudeApiKey = value;
-            await this.plugin.saveSettings();
-          });
-        (text as any).inputEl.type = 'password';
-        return text;
-      });
+    // Dynamic API key field based on selected provider
+    const provider = this.plugin.settings.data.apiProvider;
+
+    if (provider === 'claude') {
+      new Setting(containerEl)
+        .setName('Claude API Key')
+        .setDesc('Enter your Anthropic API key (stored locally). Get it from https://console.anthropic.com/account/keys')
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-ant-...')
+            .setValue(this.plugin.settings.data.claudeApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.data.claudeApiKey = value;
+              await this.plugin.saveSettings();
+            });
+          (text as any).inputEl.type = 'password';
+          return text;
+        });
+    } else if (provider === 'deepseek') {
+      new Setting(containerEl)
+        .setName('DeepSeek API Key')
+        .setDesc('Enter your DeepSeek API key (stored locally). Get it from https://platform.deepseek.com/api_keys')
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-...')
+            .setValue(this.plugin.settings.data.deepseekApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.data.deepseekApiKey = value;
+              await this.plugin.saveSettings();
+            });
+          (text as any).inputEl.type = 'password';
+          return text;
+        });
+    } else if (provider === 'openrouter') {
+      new Setting(containerEl)
+        .setName('OpenRouter API Key')
+        .setDesc('Enter your OpenRouter API key (stored locally). Get it from https://openrouter.ai/settings/keys')
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-or-...')
+            .setValue(this.plugin.settings.data.openrouterApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.data.openrouterApiKey = value;
+              await this.plugin.saveSettings();
+            });
+          (text as any).inputEl.type = 'password';
+          return text;
+        });
+
+      new Setting(containerEl)
+        .setName('OpenRouter Model')
+        .setDesc('Choose which model to use. Popular options: openai/gpt-4-turbo, anthropic/claude-3-opus, mistralai/mistral-large')
+        .addDropdown((dropdown) =>
+          dropdown
+            .addOption('openai/gpt-4-turbo', 'GPT-4 Turbo')
+            .addOption('openai/gpt-4o', 'GPT-4o')
+            .addOption('anthropic/claude-3-opus', 'Claude 3 Opus')
+            .addOption('anthropic/claude-3-sonnet', 'Claude 3 Sonnet')
+            .addOption('mistralai/mistral-large', 'Mistral Large')
+            .addOption('meta-llama/llama-2-70b', 'Llama 2 70B')
+            .setValue(this.plugin.settings.data.openrouterModel)
+            .onChange(async (value) => {
+              this.plugin.settings.data.openrouterModel = value;
+              await this.plugin.saveSettings();
+            })
+        );
+    } else if (provider === 'omniroute') {
+      new Setting(containerEl)
+        .setName('OmniRoute API Key')
+        .setDesc('Enter your OmniRoute API key (stored locally). Get it from https://omniroute.ai/dashboard/api-keys')
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-om-...')
+            .setValue(this.plugin.settings.data.omnirouteApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.data.omnirouteApiKey = value;
+              await this.plugin.saveSettings();
+            });
+          (text as any).inputEl.type = 'password';
+          return text;
+        });
+
+      new Setting(containerEl)
+        .setName('OmniRoute Model')
+        .setDesc('Choose which model to use. OmniRoute supports multiple providers.')
+        .addDropdown((dropdown) =>
+          dropdown
+            .addOption('gpt-4-turbo', 'GPT-4 Turbo')
+            .addOption('gpt-4o', 'GPT-4o')
+            .addOption('claude-3-opus', 'Claude 3 Opus')
+            .addOption('claude-3-sonnet', 'Claude 3 Sonnet')
+            .addOption('claude-3-5-sonnet', 'Claude 3.5 Sonnet')
+            .addOption('claude-4-sonnet', 'Claude 4 Sonnet')
+            .addOption('claude-4-5-sonnet', 'Claude 4.5 Sonnet')
+            .addOption('claude-haiku-4-5', 'Claude Haiku 4.5')
+            .addOption('glm-5', 'GLM-5')
+            .addOption('deepseek-3-2', 'DeepSeek 3.2')
+            .addOption('mistral-large', 'Mistral Large')
+            .addOption('llama-3-70b', 'Llama 3 70B')
+            .addOption('gemini-pro', 'Gemini Pro')
+            .setValue(this.plugin.settings.data.omnirouteModel)
+            .onChange(async (value) => {
+              this.plugin.settings.data.omnirouteModel = value;
+              await this.plugin.saveSettings();
+            })
+        );
+    } else if (provider === 'gpt') {
+      new Setting(containerEl)
+        .setName('OpenAI API Key')
+        .setDesc('Enter your OpenAI API key (stored locally). Coming soon...')
+        .addText((text) => {
+          text
+            .setPlaceholder('sk-...')
+            .setValue(this.plugin.settings.data.gptApiKey || '')
+            .onChange(async (value) => {
+              this.plugin.settings.data.gptApiKey = value;
+              await this.plugin.saveSettings();
+            });
+          (text as any).inputEl.type = 'password';
+          text.setDisabled(true);
+          return text;
+        });
+    }
 
     new Setting(containerEl)
       .setName('Test Connection')
@@ -90,6 +216,76 @@ export class ObsidiaKnowsSettingTab extends PluginSettingTab {
           .onClick(async () => {
             button.setDisabled(true);
             button.setButtonText('Testing...');
+
+            try {
+              const provider = this.plugin.settings.data.apiProvider;
+              let testProvider;
+
+              if (provider === 'claude') {
+                const key = this.plugin.settings.data.claudeApiKey;
+                if (!key) {
+                  new Notice('❌ Claude API key is empty');
+                  button.setDisabled(false);
+                  button.setButtonText('Test');
+                  return;
+                }
+                testProvider = new ClaudeProvider(key);
+              } else if (provider === 'deepseek') {
+                const key = this.plugin.settings.data.deepseekApiKey;
+                if (!key) {
+                  new Notice('❌ DeepSeek API key is empty');
+                  button.setDisabled(false);
+                  button.setButtonText('Test');
+                  return;
+                }
+                testProvider = new DeepSeekProvider(key);
+              } else if (provider === 'openrouter') {
+                const key = this.plugin.settings.data.openrouterApiKey;
+                if (!key) {
+                  new Notice('❌ OpenRouter API key is empty');
+                  button.setDisabled(false);
+                  button.setButtonText('Test');
+                  return;
+                }
+                testProvider = new OpenRouterProvider(key, this.plugin.settings.data.openrouterModel);
+              } else if (provider === 'omniroute') {
+                const key = this.plugin.settings.data.omnirouteApiKey;
+                if (!key) {
+                  new Notice('❌ OmniRoute API key is empty');
+                  button.setDisabled(false);
+                  button.setButtonText('Test');
+                  return;
+                }
+                testProvider = new OmniRouteProvider(key, this.plugin.settings.data.omnirouteModel);
+              } else {
+                new Notice('❌ Provider not supported yet');
+                button.setDisabled(false);
+                button.setButtonText('Test');
+                return;
+              }
+
+              // Test with a simple prompt
+              const testPrompt = 'Return valid JSON: {"mainNode":{"id":"test","title":"Test","type":"concept","depth":"main","summary":"Test","content":{},"metadata":{"sourceDocument":"test","createdAt":"2026-10-10T00:00:00Z"}},"majorNodes":[],"minorNodes":[],"relationships":[]}';
+
+              const result = await testProvider.analyze(testPrompt, {
+                depth: 'quick',
+                nodeTypes: ['concept'],
+              });
+
+              if (result && result.mainNode) {
+                new Notice('✅ API connection successful!');
+                logger.log('API test passed');
+              } else {
+                new Notice('❌ API returned invalid response');
+              }
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              new Notice(`❌ Connection failed: ${errorMsg}`);
+              logger.error('API test failed:', error);
+            } finally {
+              button.setDisabled(false);
+              button.setButtonText('Test');
+            }
           })
       );
 

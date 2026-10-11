@@ -4,6 +4,9 @@ import { showCreateGraphModal } from './ui/createModal';
 import { showProgressNotification, showErrorNotification, showSuccessNotification, hideProgressNotification } from './ui/progressNotification';
 import { validateTextInput } from './input/inputHandler';
 import { ClaudeProvider } from './analysis/claudeProvider';
+import { DeepSeekProvider } from './analysis/deepseekProvider';
+import { OpenRouterProvider } from './analysis/openrouterProvider';
+import { OmniRouteProvider } from './analysis/omnirouteProvider';
 import { analyzeDocument } from './analysis/analysisEngine';
 import { formatGraphOutput } from './output/outputFormatter';
 import { createGraphInVault } from './vault/vaultIntegration';
@@ -79,14 +82,39 @@ export default class ObsidiaKnowsPlugin extends Plugin {
 
         logger.log(`Input validated: ${validation.wordCount} words`);
 
-        // Validate API key
-        if (!this.settings.data.claudeApiKey) {
-          showErrorNotification(this.app, 'Claude API key not configured. Check plugin settings.');
+        // Get provider based on settings
+        let provider;
+        const apiProvider = this.settings.data.apiProvider;
+
+        if (apiProvider === 'deepseek') {
+          if (!this.settings.data.deepseekApiKey) {
+            showErrorNotification(this.app, 'DeepSeek API key not configured. Check plugin settings.');
+            return;
+          }
+          provider = new DeepSeekProvider(this.settings.data.deepseekApiKey);
+        } else if (apiProvider === 'openrouter') {
+          if (!this.settings.data.openrouterApiKey) {
+            showErrorNotification(this.app, 'OpenRouter API key not configured. Check plugin settings.');
+            return;
+          }
+          provider = new OpenRouterProvider(this.settings.data.openrouterApiKey, this.settings.data.openrouterModel);
+        } else if (apiProvider === 'omniroute') {
+          if (!this.settings.data.omnirouteApiKey) {
+            showErrorNotification(this.app, 'OmniRoute API key not configured. Check plugin settings.');
+            return;
+          }
+          provider = new OmniRouteProvider(this.settings.data.omnirouteApiKey, this.settings.data.omnirouteModel);
+        } else if (apiProvider === 'claude') {
+          if (!this.settings.data.claudeApiKey) {
+            showErrorNotification(this.app, 'Claude API key not configured. Check plugin settings.');
+            return;
+          }
+          provider = new ClaudeProvider(this.settings.data.claudeApiKey);
+        } else {
+          showErrorNotification(this.app, `API provider "${apiProvider}" not supported yet.`);
           return;
         }
 
-        // Create provider
-        const provider = new ClaudeProvider(this.settings.data.claudeApiKey);
         if (!provider.isAvailable()) {
           showErrorNotification(this.app, 'LLM provider is not available');
           return;
@@ -145,3 +173,4 @@ export default class ObsidiaKnowsPlugin extends Plugin {
     });
   }
 }
+
